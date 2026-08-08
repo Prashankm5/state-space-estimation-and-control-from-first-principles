@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>State-Space Modeling from First Principles</title>
+<meta name="description"
+content="Learn State-Space Modeling from first principles through intuitive explanations, physics-based derivations, and numerical examples.">
+
+<meta name="author" content="Prashank Mishra">
+<style>
+:root{
+    --bg:#f6f8fc;
+    --surface:#ffffff;
+    --text:#1f2937;
+    --muted:#475569;
+    --primary:#1e40af;
+    --primary-soft:#dbeafe;
+    --border:#dbe3f3;
+    --code:#eef2ff;
+    --flow:#111827;
+}
+
+*{ box-sizing:border-box; }
+
+body{
+    margin:0;
+    font-family:Inter, Arial, Helvetica, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.8;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+    padding:36px 20px 60px;
+}
+
+.hero{
+    background:#f8fbff;
+    border:1px solid #d7e6fb;
+    color:var(--text);
+    padding:42px;
+    border-radius:24px;
+    margin-bottom:28px;
+    box-shadow:0 10px 30px rgba(15,23,42,.06);
+}
+
+.hero h1{
+    margin:0 0 16px;
+    color:#0f172a;
+    font-size:2.35rem;
+    line-height:1.2;
+}
+
+.hero p{
+    margin:14px 0;
+    color:#334155;
+    font-size:1.05rem;
+}
+
+.hero .hero-note{
+    background:#ffffff;
+    border:1px solid #d7e6fb;
+    border-left:5px solid #2563eb;
+    padding:16px 18px;
+    border-radius:14px;
+    margin:20px 0;
+    color:#0f172a;
+}
+
+.section{
+    background:var(--surface);
+    padding:28px;
+    border-radius:20px;
+    margin:24px 0;
+    box-shadow:0 4px 14px rgba(15,23,42,.05);
+    border:1px solid rgba(219,227,243,.7);
+}
+
+h2{
+    color:#1e3a8a;
+    margin:0 0 12px;
+}
+
+h3{
+    color:#2563eb;
+    margin-top:24px;
+}
+
+p{ margin:12px 0; }
+
+code{
+    background:var(--code);
+    padding:2px 6px;
+    border-radius:6px;
+    font-size:.96em;
+}
+
+.eq{
+    background:#f8fafc;
+    border-left:4px solid #2563eb;
+    padding:14px 16px;
+    margin:16px 0;
+    overflow-x:auto;
+    font-family:"Consolas", "Courier New", monospace;
+    font-size:.98rem;
+}
+
+.note{
+    background:#f8fbff;
+    border:1px solid #d7e6fb;
+    border-left:5px solid #2563eb;
+    padding:16px 18px;
+    border-radius:14px;
+    margin:18px 0;
+}
+
+.flow{
+    background:var(--flow);
+    color:#f9fafb;
+    padding:18px;
+    border-radius:16px;
+    font-family:"Consolas", "Courier New", monospace;
+    overflow:auto;
+    box-shadow:0 6px 18px rgba(15,23,42,.18);
+}
+
+.flow pre{
+    margin:0;
+    white-space:pre;
+    font-family:inherit;
+    color:inherit;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin:18px 0;
+}
+
+th,td{
+    border:1px solid var(--border);
+    padding:10px 12px;
+    text-align:left;
+    vertical-align:top;
+}
+
+th{
+    background:#eef4ff;
+}
+
+.btn{
+    display:inline-block;
+    background:#2563eb;
+    color:#ffffff;
+    text-decoration:none;
+    padding:12px 18px;
+    border-radius:12px;
+    font-weight:600;
+    margin-top:8px;
+    transition:background .2s ease;
+}
+
+.btn:hover{ background:#1d4ed8; }
+
+.footer{
+    width:100%;
+    text-align:center;
+    color:#64748b;
+    margin:56px auto 16px;
+    font-size:.92rem;
+    line-height:1.8;
+    padding-top:20px;
+    border-top:1px solid #e5e7eb;
+    letter-spacing:.2px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div class="hero">
+    <h1>State-Space Modeling from First Principles</h1>
+
+    <p>
+        Imagine a drone flying from one building to another. Every second it must
+        answer a simple question:
+    </p>
+
+    <div class="hero-note">
+        <strong>Where will I be one second later?</strong>
+    </div>
+
+    <p>
+        To answer that question, the drone does not need its entire history. It only
+        needs a small set of variables that describe its current motion, such as
+        position and velocity.
+    </p>
+
+    <p>
+        From those variables and the applied motor thrust, physics can predict the
+        future motion. This idea is the foundation of <strong>state-space
+        modeling</strong>.
+    </p>
+
+    <p>
+        In this note we will derive the state-space equations directly from Newtonian
+        mechanics, understand the meaning of the matrices <strong>A, B, C,
+        D</strong>, and see how they are used for simulation, prediction, estimation,
+        and control.
+    </p>
+
+    <div class="hero-note">
+        Think of state-space as a compact mathematical description of a physical
+        system that allows a computer to predict its future.
+    </div>
+</div>
+
+<div class="section">
+    <div class="note">
+        Continue later with estimation:
+        <br><br>
+        <a href="#" class="btn">→ Kalman Filter from First Principles</a>
+    </div>
+</div>
+
+<div class="section">
+<h2>Step 1: Start with a Physical System</h2>
+
+<p>Consider a car moving in a straight line.</p>
+
+<p>At any instant we care about:</p>
+<ul>
+<li>Position <code>p(t)</code> in meters</li>
+<li>Velocity <code>v(t)</code> in m/s</li>
+</ul>
+
+<p>The smallest set of variables that completely describes the motion is</p>
+
+<div class="eq">x(t) = [ p(t) ; v(t) ]</div>
+
+<p>This is called the <strong>state vector</strong>.</p>
+
+<div class="note">
+Think of the state as the memory of the system. If you know the state now and
+the future input, you can predict future motion.
+</div>
+</div>
+
+<div class="section">
+<h2>Step 2: Define the Input</h2>
+
+<p>Suppose the driver presses the accelerator.</p>
+
+<div class="eq">u(t) = a(t)</div>
+
+<p>where <code>a(t)</code> is acceleration.</p>
+
+<table>
+<thead>
+<tr><th>System</th><th>Input u</th></tr>
+</thead>
+<tbody>
+<tr><td>Car</td><td>Acceleration</td></tr>
+<tr><td>Drone</td><td>Thrust command</td></tr>
+<tr><td>Robot arm</td><td>Motor torque</td></tr>
+</tbody>
+</table>
+
+<p>The input is usually known because we command it.</p>
+</div>
+
+<div class="section">
+<h2>Step 3: Derive Motion from Physics</h2>
+
+<p>Take a small sampling interval <code>Δt</code>.</p>
+
+<h3>Position equation</h3>
+
+<div class="eq">p(k+1) = p(k) + v(k)Δt + 0.5 a(k)Δt²</div>
+
+<h3>Velocity equation</h3>
+
+<div class="eq">v(k+1) = v(k) + a(k)Δt</div>
+
+<p>Replace <code>a(k)</code> by <code>u(k)</code>.</p>
+
+<h3>Write both equations together</h3>
+
+<div class="eq">
+[ p(k+1) ; v(k+1) ] =
+[ p(k) + v(k)Δt + 0.5u(k)Δt² ;
+  v(k) + u(k)Δt ]
+</div>
+
+<p>Separate state terms and input terms:</p>
+
+<div class="eq">
+[ p(k+1) ; v(k+1) ] =
+[ 1  Δt ; 0  1 ] [ p(k) ; v(k) ] +
+[ 0.5Δt² ; Δt ] u(k)
+</div>
+
+<p>Now define</p>
+
+<div class="eq">
+A = [ 1  Δt ; 0  1 ]
+</div>
+
+<div class="eq">
+B = [ 0.5Δt² ; Δt ]
+</div>
+
+<p>Therefore</p>
+
+<div class="eq">
+<strong>x(k+1) = A x(k) + B u(k)</strong>
+</div>
+
+<div class="note">
+Notice that we did not guess A or B. They came directly from Newtonian
+kinematics.
+</div>
+</div>
+
+<div class="section">
+<h2>Step 4: Understand Matrix A</h2>
+
+<p>Take <code>Δt = 1 s</code>.</p>
+
+<div class="eq">A = [ 1 1 ; 0 1 ]</div>
+
+<p>Multiply:</p>
+
+<div class="eq">
+A x(k) = [ p(k)+v(k) ; v(k) ]
+</div>
+
+<p>Interpretation:</p>
+
+<ul>
+<li>new position = old position + velocity × time,</li>
+<li>new velocity = old velocity.</li>
+</ul>
+
+<p><strong>A describes natural motion when no input is applied.</strong></p>
+</div>
+
+<div class="section">
+<h2>Step 5: Understand Matrix B</h2>
+
+<p>With <code>Δt = 1</code>:</p>
+
+<div class="eq">B = [ 0.5 ; 1 ]</div>
+
+<p>One unit acceleration produces:</p>
+
+<ul>
+<li>+0.5 m change in position after 1 s,</li>
+<li>+1 m/s change in velocity after 1 s.</li>
+</ul>
+
+<p><strong>B tells how strongly the input pushes each state.</strong></p>
+</div>
+
+<div class="section">
+<h2>Step 6: Numerical Example</h2>
+
+<p>Initial state:</p>
+
+<div class="eq">x(0) = [ 0 ; 10 ]</div>
+
+<p>Input:</p>
+
+<div class="eq">u(0) = 2 m/s²</div>
+
+<p>Prediction:</p>
+
+<div class="eq">x(1) = A x(0) + B u(0)</div>
+
+<p>Compute:</p>
+
+<div class="eq">A x(0) = [ 10 ; 10 ]</div>
+
+<div class="eq">B u(0) = [ 1 ; 2 ]</div>
+
+<p>Add them:</p>
+
+<div class="eq">x(1) = [ 11 ; 12 ]</div>
+
+<p>After one second:</p>
+
+<ul>
+<li>Position = <strong>11 m</strong></li>
+<li>Velocity = <strong>12 m/s</strong></li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Step 7: Add a Sensor</h2>
+
+<p>Suppose a GPS measures position only.</p>
+
+<div class="eq">y(k) = p(k)</div>
+
+<p>In matrix form:</p>
+
+<div class="eq">y(k) = [ 1 0 ] [ p(k) ; v(k) ]</div>
+
+<p>Define</p>
+
+<div class="eq">C = [ 1 0 ]</div>
+
+<p>Then</p>
+
+<div class="eq"><strong>y(k) = C x(k)</strong></div>
+
+<p>Meaning:</p>
+
+<ul>
+<li>Position is measured.</li>
+<li>Velocity is not measured.</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>Step 8: What is D and Why Is It Often Zero?</h2>
+
+<p>The general output equation is</p>
+
+<div class="eq"><strong>y(k) = C x(k) + D u(k)</strong></div>
+
+<p>Think of two possible physical situations.</p>
+
+<h3>Case 1: Output changes only through system dynamics</h3>
+
+<p>Input = accelerator command, output = GPS position.</p>
+
+<div class="flow"><pre>Accelerator command
+        ↓
+Acceleration changes
+        ↓
+Velocity changes
+        ↓
+Position changes</pre></div>
+
+<p>
+The position cannot jump immediately when the accelerator is pressed, so there
+is no direct path from input to output.
+</p>
+
+<div class="eq"><strong>D = 0</strong></div>
+
+<h3>Case 2: Output changes immediately with input</h3>
+
+<p>Input = voltage command, output = measured voltage.</p>
+
+<div class="flow"><pre>Input voltage ───────────────▶ Output voltage
+        (instantaneous path)</pre></div>
+
+<p>Here the output follows the input instantly, so</p>
+
+<div class="eq"><strong>D ≠ 0</strong></div>
+
+<p>Example:</p>
+
+<div class="eq"><strong>y(k) = 2u(k)</strong></div>
+
+<p>In that case <code>C = 0</code> and <code>D = 2</code>.</p>
+
+<div class="note">
+Ask one question:
+<br><br>
+<strong>Can the output change instantly when the input changes?</strong>
+<ul>
+<li>No → D = 0</li>
+<li>Yes → D ≠ 0</li>
+</ul>
+</div>
+</div>
+
+<div class="section">
+<h2>Step 9: Physical Meaning of the Block Diagram</h2>
+
+<p>The complete state-space model is</p>
+
+<div class="eq"><strong>x(k+1)=Ax(k)+Bu(k)</strong></div>
+<div class="eq"><strong>y(k)=Cx(k)+Du(k)</strong></div>
+
+<p>Now include both paths from the input to the output.</p>
+
+<div class="flow"><pre>Previous state x(k) ──▶ [ A ] ──┐
+                                ▼
+                              ( + ) ──▶ x(k+1) ──▶ [ C ] ──┐
+                                ▲                           │
+Input u(k) ───────────▶ [ B ] ──┘                           ▼
+                                                           ( + ) ──▶ y(k)
+Input u(k) ───────────────────────────────▶ [ D ] ──────────┘</pre></div>
+
+<h3>Read it slowly</h3>
+
+<ol>
+<li><strong>x(k)</strong> is the current state of the system.</li>
+<li><strong>A</strong> predicts how that state evolves naturally during one sample.</li>
+<li><strong>u(k)</strong> is the external command.</li>
+<li><strong>B</strong> converts the command into its effect on the states.</li>
+<li>The first <strong>(+)</strong> block forms the next state:
+    <strong>x(k+1)=Ax(k)+Bu(k)</strong>.</li>
+<li><strong>C</strong> selects which states are visible to the sensor.</li>
+<li><strong>D</strong> represents the direct path from input to output.</li>
+<li>The second <strong>(+)</strong> block forms the final output:
+    <strong>y(k)=Cx(k)+Du(k)</strong>.</li>
+</ol>
+
+<hr>
+
+<h3>Physical interpretation</h3>
+
+<ul>
+<li><strong>A-path:</strong> motion caused by the previous state (inertia, momentum,
+    stored energy, etc.).</li>
+<li><strong>B-path:</strong> motion caused by the applied input.</li>
+<li><strong>C-path:</strong> what the sensor can observe from the state.</li>
+<li><strong>D-path:</strong> any instantaneous effect of the input on the output.</li>
+</ul>
+
+<hr>
+
+<h3>Car example (GPS position)</h3>
+
+<ul>
+<li>Input: accelerator command.</li>
+<li>Output: GPS position.</li>
+<li>The accelerator affects position only through acceleration and velocity.</li>
+<li>Therefore the direct path is absent, so <strong>D=0</strong>.</li>
+</ul>
+
+<hr>
+
+<h3>Voltage measurement example</h3>
+
+<ul>
+<li>Input: commanded voltage.</li>
+<li>Output: measured voltage.</li>
+<li>The sensor reads the input immediately.</li>
+<li>Therefore the direct path exists, so <strong>D≠0</strong>.</li>
+</ul>
+
+<div class="note">
+The block diagram is simply a picture of the two state-space equations. The
+upper path creates the state dynamics, while the lower path represents any
+instantaneous input-to-output feedthrough.
+</div>
+</div>
+
+<div class="section">
+<h2>Step 10: Final State-Space Model</h2>
+
+<div class="eq">x(k+1) = A x(k) + B u(k)</div>
+
+<div class="eq">y(k) = C x(k) + D u(k)</div>
+
+<p>with</p>
+
+<div class="eq">
+A = [ 1 1 ; 0 1 ]
+B = [ 0.5 ; 1 ]
+C = [ 1 0 ]
+D = 0
+</div>
+
+<p>This is the complete mathematical model of the car.</p>
+</div>
+
+<div class="section">
+<h2>Step 11: MATLAB Meaning of ss</h2>
+
+<p>In MATLAB we write:</p>
+
+<CodeBlock language="matlab" content="A = [1 1; 0 1];
+B = [0.5; 1];
+C = [1 0];
+D = 0;
+
+sys = ss(A,B,C,D);"/>
+
+<p><code>ss</code> means <strong>state-space object</strong>. MATLAB stores the matrices
+and treats them as one dynamical system.</p>
+
+<div class="note">
+Think of <code>sys</code> as a digital twin of the car.
+</div>
+</div>
+
+<div class="section">
+<h2>Step 12: Continuous to Discrete (c2d)</h2>
+
+<p>Continuous physics:</p>
+
+<div class="eq">ẋ(t) = A_c x(t) + B_c u(t)</div>
+
+<p>Computers work at discrete sampling instants, so MATLAB converts the model using
+<code>c2d</code>.</p>
+
+<CodeBlock language="matlab" content="Ts = 1;                  % sample time
+sysc = ss(Ac,Bc,C,D);   % continuous model
+sysd = c2d(sysc, Ts);   % discrete model"/>
+
+<p><strong>c2d</strong> means “continuous to discrete”. It computes the exact
+discrete matrices for the chosen sampling time.</p>
+</div>
+
+<div class="section">
+<h2>Step 13: Simulate the Model (lsim)</h2>
+
+<CodeBlock language="matlab" content="t = (0:10)';
+u = ones(size(t));      % constant acceleration
+
+y = lsim(sys, u, t);"/>
+
+<p><strong>lsim</strong> means “linear simulation”. MATLAB repeatedly applies the
+state equation and computes the output at every time step.</p>
+
+<div class="flow"><pre>Input u(t)
+    ↓
+State equation propagates x(t)
+    ↓
+Output equation computes y(t)
+    ↓
+Plot response</pre></div>
+</div>
+
+<div class="section">
+<h2>Step 14: Why State-Space is Powerful</h2>
+
+<table>
+<thead>
+<tr><th>Method</th><th>Internal states visible?</th></tr>
+</thead>
+<tbody>
+<tr><td>Transfer function</td><td>Usually no</td></tr>
+<tr><td>State-space</td><td>Yes</td></tr>
+</tbody>
+</table>
+
+<p>State-space lets us estimate hidden quantities such as velocity, acceleration,
+orientation, battery state, and many other variables.</p>
+</div>
+
+<div class="section">
+<h2>Step 15: Where Estimation Begins</h2>
+
+<p>Real systems are not perfect. Wind, vibration, friction, and sensor errors
+introduce uncertainty.</p>
+
+<div class="eq">x(k+1) = A x(k) + B u(k) + w(k)</div>
+
+<div class="eq">y(k) = C x(k) + D u(k) + v(k)</div>
+
+<p>where <code>w(k)</code> is process disturbance and <code>v(k)</code> is sensor
+noise.</p>
+
+<div class="note">
+State-space modeling provides the physics. Estimation methods such as the
+Kalman filter use this model to recover the most likely true state from noisy
+measurements.
+</div>
+</div>
+
+<div class="section">
+<h2>Further Reading and References</h2>
+
+<p>
+The derivations and interpretations in this note follow the standard treatment
+of state-space modeling and modern control theory. The following references are
+excellent next steps for deeper study.
+</p>
+
+<ol>
+<li>
+    <strong>Katsuhiko Ogata</strong>,
+    <em>Modern Control Engineering</em>, 5th Edition, Prentice Hall.
+</li>
+<li>
+    <strong>Karl J. Åström and Richard M. Murray</strong>,
+    <em>Feedback Systems: An Introduction for Scientists and Engineers</em>,
+    Princeton University Press.
+</li>
+<li>
+    <strong>Gene F. Franklin, J. David Powell, and Abbas Emami-Naeini</strong>,
+    <em>Feedback Control of Dynamic Systems</em>, Pearson.
+</li>
+<li>
+    <strong>Bernard Friedland</strong>,
+    <em>Control System Design: An Introduction to State-Space Methods</em>,
+    Dover Publications.
+</li>
+<li>
+    <strong>Dan Simon</strong>,
+    <em>Optimal State Estimation</em>, Wiley.
+</li>
+</ol>
+
+<p>
+For an accessible free reference, see:
+</p>
+
+<ul>
+<li>
+    <a href="https://fbsbook.org/" target="_blank" rel="noopener">
+        Feedback Systems — Åström & Murray
+    </a>
+</li>
+</ul>
+
+<div class="note">
+These references use slightly different notation in places, but the physical
+ideas behind the matrices A, B, C, and D are the same as the ones developed in
+this note.
+</div>
+</div>
+
+<div class="section">
+<h2>Key Takeaways</h2>
+
+<ul>
+<li>State-space is <strong>physics written in matrix form</strong>.</li>
+<li><strong>A</strong> describes natural evolution.</li>
+<li><strong>B</strong> describes input influence.</li>
+<li><strong>C</strong> describes what we can measure.</li>
+<li><strong>D</strong> describes direct input-to-output feedthrough.</li>
+<li><code>ss</code> creates the mathematical system.</li>
+<li><code>c2d</code> converts continuous physics to discrete-time form.</li>
+<li><code>lsim</code> simulates the response of the model.</li>
+<li>This model is the foundation for modern estimation and control algorithms.</li>
+</ul>
+</div>
+
+<div class="footer">
+    <strong>State-Space Modeling from First Principles</strong><br>
+    Educational notes prepared with curiosity, mathematics, and a lot of coffee ☕<br>
+    © 2026 <strong>Prashank Mishra</strong>
+</div>
+
+</div>
+</body>
+</html>
