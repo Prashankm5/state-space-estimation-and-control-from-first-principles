@@ -234,7 +234,18 @@ blockquote{
 Move the sliders to see how process uncertainty <strong>Q</strong> and measurement uncertainty
 <strong>R</strong> change the model belief, sensor belief, and Kalman estimate.
 </p>
+<div class="note">
+    If you are not familiar with state-space modeling, please read the short
+    introduction first before continuing with the Kalman-filter section.
+    <br><br>
 
+    <a href="index.html"
+       class="btn"
+       target="_blank"
+       rel="noopener">
+        → Read the State-Space Introduction
+    </a>
+</div>
 <div class="controls">
 
   <div class="control">
@@ -650,18 +661,7 @@ Sampling time: <strong>Δt = 1 s</strong>
 <p>
 State-space matrices:
 </p>
-<div class="note">
-    If you are not familiar with state-space modeling, please read the short
-    introduction first before continuing with the Kalman-filter section.
-    <br><br>
 
-    <a href="https://prashankm5.github.io/state-space-first-principles/"
-       class="btn"
-       target="_blank"
-       rel="noopener">
-        → Read the State-Space Introduction
-    </a>
-</div>
 <p><strong>A = [[1,1],[0,1]]</strong></p>
 
 <p><strong>B = [[0.5],[1]]</strong></p>
@@ -1058,6 +1058,8 @@ Its goal is to recover the hidden blue trajectory—the closest possible estimat
 Once this story is clear, the state-space equations and Kalman mathematics become much easier to understand,
 because every symbol corresponds to a physical object in the story.
 </p>
+
+
 <div class="section">
 <h2>Further Reading and References</h2>
 
@@ -1109,6 +1111,7 @@ These references use slightly different notation in places, but the physical
 ideas behind the matrices A, B, C, and D are the same as the ones developed in
 this note.
 </div>
+
 </div>
 </div>
 
