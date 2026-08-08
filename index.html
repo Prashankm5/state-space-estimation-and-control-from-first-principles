@@ -29,6 +29,11 @@ body{
     background:var(--bg);
     color:var(--text);
     line-height:1.8;
+
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
 }
 
 .container{
@@ -179,7 +184,9 @@ th{
 </style>
 </head>
 
-<body>
+<body oncontextmenu="return false"
+      onselectstart="return false"
+      ondragstart="return false">
 <div class="container">
 
 <div class="hero">
@@ -741,8 +748,8 @@ this note.
 
 <div class="footer">
     <strong>State-Space Modeling from First Principles</strong><br>
-    Educational notes prepared with curiosity, mathematics, and a lot of coffee ☕<br>
-    © 2026 <strong>Prashank Mishra</strong>
+    Made with curiosity, mathematics, and a lot of coffee ☕.<br>
+    © 2026 <strong>Prashank Mishra</strong><br>
 </div>
 
 </div>
